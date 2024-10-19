@@ -6,7 +6,7 @@
 /*   By: bgoron <bgoron@42angouleme.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/19 07:30:58 by bgoron            #+#    #+#             */
-/*   Updated: 2024/10/19 11:11:36 by bgoron           ###   ########.fr       */
+/*   Updated: 2024/10/19 19:09:41 by bgoron           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,11 +16,13 @@
 #include <cstdlib>
 #include <ctime>
 
-long long gcd(long long a, long long b)
+#define BITS 8
+
+int gcd(int a, int b)
 {
     while (b != 0)
     {
-        long long tmp = b;
+        int tmp = b;
         b = a % b;
         a = tmp;
     }
@@ -28,20 +30,20 @@ long long gcd(long long a, long long b)
     return (a);
 }
 
-long long mod_invert(long long e, long long phi)
+int mod_invert(int e, int phi)
 {
-    long long t = 0, new_t = 1;
-    long long r = phi, new_r = e;
+    int t = 0, new_t = 1;
+    int r = phi, new_r = e;
 
     while (new_r != 0)
     {
-        long long quotient = r / new_r;
+        int quotient = r / new_r;
 
-        long long temp_t = t;
+        int temp_t = t;
         t = new_t;
         new_t = temp_t - quotient * new_t;
 
-        long long temp_r = r;
+        int temp_r = r;
         r = new_r;
         new_r = temp_r - quotient * new_r;
     }
@@ -51,11 +53,11 @@ long long mod_invert(long long e, long long phi)
     return (t);
 }
 
-long long power_mod(long long base, long long exp, long long mod)
+int power_mod(int base, int exp, int mod)
 {
-    long long result = 1;
+    int result = 1;
 
-	for (long long i = 0; i < exp; i++)
+	for (int i = 0; i < exp; i++)
 	{
         result = (result * base) % mod;
     }
@@ -63,7 +65,7 @@ long long power_mod(long long base, long long exp, long long mod)
     return (result);
 }
 
-bool is_prime(long long number)
+bool is_prime(int number)
 {
     if (number <= 1) return (false);
     if (number == 2) return (true);
@@ -77,10 +79,10 @@ bool is_prime(long long number)
     return (true);
 }
 
-void generate_prime(long long &p, long long &q, int bits)
+void generate_prime(int &p, int &q, int bits)
 {
-    long long min = 1LL << (bits - 1);
-    long long max = (1LL << bits) - 1;
+    int min = 1 << (bits - 1);
+    int max = (1 << bits) - 1;
 
     do 
 	{
@@ -93,13 +95,13 @@ void generate_prime(long long &p, long long &q, int bits)
     } while (!is_prime(q) || p == q);
 }
 
-void generate_keys(long long &n, long long &e, long long &d, long long &p, long long &q)
+void generate_keys(int &n, int &e, int &d, int &p, int &q)
 {
-    generate_prime(p, q, 8);
+    generate_prime(p, q, BITS);
     n = p * q;
-    long long phi = (p - 1) * (q - 1);
+    int phi = (p - 1) * (q - 1);
 
-    e = 3;
+    e = 65537;
     while (gcd(e, phi) != 1)
     {
         e += 2;
@@ -108,69 +110,64 @@ void generate_keys(long long &n, long long &e, long long &d, long long &p, long 
     d = mod_invert(e, phi);
 }
 
-long long encrypt_char(long long message, long long e, long long n)
+std::vector<int> encrypt_message(const std::string &message, int e, int n)
 {
-    return power_mod(message, e, n);
-}
-
-long long decrypt_char(long long encrypted, long long d, long long n)
-{
-    return power_mod(encrypted, d, n);
-}
-
-std::vector<long long> encrypt_message(const std::string &message, long long e, long long n)
-{
-    std::vector<long long> encrypted;
+    std::vector<int> encrypted;
     
 	for (std::size_t i = 0; i < message.size(); i++)
     {
-        encrypted.push_back(encrypt_char(message[i], e, n));
+        encrypted.push_back(power_mod(message[i], e, n));
     }
     
 	return (encrypted);
 }
 
-std::string decrypt_message(const std::vector<long long> &encrypted, long long d, long long n)
+std::string decrypt_message(const std::vector<int> &encrypted, int d, int n)
 {
     std::string decrypted;
     for (std::size_t i = 0; i < encrypted.size(); i++)
     {
-		decrypted += decrypt_char(encrypted[i], d, n);
+		decrypted += power_mod(encrypted[i], d, n);
     }
     return (decrypted);
 }
 
 int main(int argc, char **argv)
 {
-    if (argc < 2)
-    {
-        std::cout << "Usage : ./rsa [message]" << std::endl;
-        return (1);
-    }
-
     srand(time(0));
 
-    long long n, e, d, p, q;
-    generate_keys(n, e, d, p, q);
+	std::string message;
+	if (argc == 2)
+	{
+		message = argv[1];
+	}
+	else
+	{
+		std::string line;
+		while (std::getline(std::cin, line))
+		{
+			message += line;
+		}
+		std::cout << "Message : " << message << std::endl;
+	}
 
-    std::cout << "p = " << p << ", q = " << q << std::endl;
-    std::cout << "Clé publique : (n = " << n << ", e = " << e << ")" << std::endl;
-    std::cout << "Clé privée : (n = " << n << ", d = " << d << ")" << std::endl;
+    int n, e, d, p, q;
+	generate_keys(n, e, d, p, q);
 
-    std::string message = argv[1];
-    std::cout << "Message : " << message << std::endl;
+	std::cout << "p = " << p << ", q = " << q << std::endl;
+	std::cout << "Clé publique : (n = " << n << ", e = " << e << ")" << std::endl;
+	std::cout << "Clé privée : (n = " << n << ", d = " << d << ")" << std::endl;
 
-    std::vector<long long> encrypted = encrypt_message(message, e, n);
+	std::vector<int> encrypted = encrypt_message(message, e, n);
+	std::cout << "Message chiffré : ";
+	for (std::size_t i = 0; i < encrypted.size(); ++i)
+	{
+		std::cout << encrypted[i] << " ";
+	}
+	std::cout << std::endl;
 
-    std::cout << "Message chiffré : ";
-    for (std::size_t i = 0; i < encrypted.size(); ++i)
-    {
-        std::cout << encrypted[i] << " ";
-    }
-    std::cout << std::endl;
+	std::string decrypted = decrypt_message(encrypted, d, n);
+	std::cout << "Message déchiffré : " << decrypted << std::endl;
 
-    std::string decrypted = decrypt_message(encrypted, d, n);
-    std::cout << "Message déchiffré : " << decrypted << std::endl;
-
-    return (0);
+	return (0);
 }
