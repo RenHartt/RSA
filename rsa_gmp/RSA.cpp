@@ -6,7 +6,7 @@
 /*   By: bgoron <bgoron@42angouleme.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/19 07:30:58 by bgoron            #+#    #+#             */
-/*   Updated: 2024/10/20 18:17:58 by bgoron           ###   ########.fr       */
+/*   Updated: 2024/10/20 18:25:18 by bgoron           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ void generate_prime(mpz_t prime, int bits)
 
 void generate_keys(mpz_t n, mpz_t e, mpz_t d, mpz_t p, mpz_t q)
 {
-    int bits = 32;
+    int bits = 1024;
 	do
 	{
 		generate_prime(p, bits);
@@ -57,25 +57,31 @@ void generate_keys(mpz_t n, mpz_t e, mpz_t d, mpz_t p, mpz_t q)
 std::vector<BigInt> encrypt_message(const std::string &message, mpz_t e, mpz_t n)
 {
     std::vector<BigInt> encrypted;
-    for (char c : message)
+
+    for (std::size_t i = 0; i < message.size(); ++i)
 	{
+        char c = message[i];
         BigInt enc_char(static_cast<unsigned long>(c));
         mpz_powm(enc_char.value, enc_char.value, e, n);
         encrypted.push_back(enc_char);
     }
-    return (encrypted);
+    
+	return (encrypted);
 }
 
 std::string decrypt_message(const std::vector<BigInt> &encrypted, mpz_t d, mpz_t n)
 {
     std::string decrypted;
-    for (const BigInt &enc_char : encrypted)
+
+    for (std::vector<BigInt>::const_iterator it = encrypted.begin(); it != encrypted.end(); ++it)
 	{
+        const BigInt &enc_char = *it;
         BigInt dec_char;
         mpz_powm(dec_char.value, enc_char.value, d, n);
         decrypted += static_cast<char>(mpz_get_ui(dec_char.value));
     }
-    return (decrypted);
+ 
+	return (decrypted);
 }
 
 int main(int argc, char **argv)
@@ -100,8 +106,9 @@ int main(int argc, char **argv)
 
     std::vector<BigInt> encrypted = encrypt_message(message, e, n);
     std::cout << "Message chiffré : ";
-    for (const BigInt &c : encrypted)
+    for (std::vector<BigInt>::const_iterator it = encrypted.begin(); it != encrypted.end(); ++it)
 	{
+        const BigInt &c = *it;
         std::cout << c << " ";
     }
     std::cout << std::endl;
