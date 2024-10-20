@@ -6,12 +6,13 @@
 /*   By: bgoron <bgoron@42angouleme.fr>             +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/10/19 07:30:58 by bgoron            #+#    #+#             */
-/*   Updated: 2024/10/20 18:04:52 by bgoron           ###   ########.fr       */
+/*   Updated: 2024/10/20 18:17:58 by bgoron           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "RSA.hpp"
+#include "BigInt.hpp"
 #include <vector>
+#include <ctime>
 
 void generate_prime(mpz_t prime, int bits)
 {
@@ -40,15 +41,15 @@ void generate_keys(mpz_t n, mpz_t e, mpz_t d, mpz_t p, mpz_t q)
     mpz_inits(phi, p1, q1, NULL);
     mpz_sub_ui(p1, p, 1);
     mpz_sub_ui(q1, q, 1);
-    mpz_mul(phi, p1, q1);  // phi = (p - 1) * (q - 1)
+    mpz_mul(phi, p1, q1);
 
-    mpz_set_ui(e, 65537);  // e = 65537
+    mpz_set_ui(e, 65537);
     while (mpz_gcd_ui(NULL, e, mpz_get_ui(phi)) != 1)
 	{
-        mpz_add_ui(e, e, 2);  // Increment e until gcd(e, phi) == 1
+        mpz_add_ui(e, e, 2);
     }
 
-    mpz_invert(d, e, phi);  // d = e^(-1) mod phi
+    mpz_invert(d, e, phi);
 
     mpz_clears(phi, p1, q1, NULL);
 }
@@ -59,10 +60,10 @@ std::vector<BigInt> encrypt_message(const std::string &message, mpz_t e, mpz_t n
     for (char c : message)
 	{
         BigInt enc_char(static_cast<unsigned long>(c));
-        mpz_powm(enc_char.value, enc_char.value, e, n);  // enc_char = c^e mod n
+        mpz_powm(enc_char.value, enc_char.value, e, n);
         encrypted.push_back(enc_char);
     }
-    return encrypted;
+    return (encrypted);
 }
 
 std::string decrypt_message(const std::vector<BigInt> &encrypted, mpz_t d, mpz_t n)
@@ -71,10 +72,10 @@ std::string decrypt_message(const std::vector<BigInt> &encrypted, mpz_t d, mpz_t
     for (const BigInt &enc_char : encrypted)
 	{
         BigInt dec_char;
-        mpz_powm(dec_char.value, enc_char.value, d, n);  // dec_char = enc_char^d mod n
+        mpz_powm(dec_char.value, enc_char.value, d, n);
         decrypted += static_cast<char>(mpz_get_ui(dec_char.value));
     }
-    return decrypted;
+    return (decrypted);
 }
 
 int main(int argc, char **argv)
